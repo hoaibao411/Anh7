@@ -46,7 +46,7 @@ Cần Xcode (để có `swiftc` và `actool`).
 
 ```bash
 # 1. Mã nguồn app (thư mục tuỳ ý)
-git clone https://github.com/<tài-khoản>/Anh7.git
+git clone https://github.com/hoaibao411/Anh7.git
 cd Anh7
 
 # 2. Mã nguồn Win12 Online (bắt buộc đặt ở ~/win12)
