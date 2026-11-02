@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1B3F"/>
+      <stop offset="1" stop-color="#1F5FD1"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="#FFFFFF"/>
+  <g fill="none" stroke="url(#ink)" stroke-width="58" stroke-linecap="round" stroke-linejoin="round" transform="translate(-6 0)">
+    <!-- W whose last stroke rises into the 1 -->
+    <path d="M130 362 L 215 662 L 305 452 L 395 662 L 480 362"/><path d="M548 410 L 612 362 L 612 662"/>
+    <!-- 2 -->
+    <path d="M700 440 C 700 382, 748 356, 796 356 C 848 356, 892 392, 892 446 C 892 500, 848 532, 796 572 L 700 662 L 898 662"/>
+  </g>
+</svg>

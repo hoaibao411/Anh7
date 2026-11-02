@@ -1,0 +1,27 @@
+/* Anh 7 UI — kiểu chữ, màu, nút dùng chung cho app (tự đổi sáng/tối theo Win12) */
+:root {
+  --bg: #f7f8fb; --panel: #ffffff; --text: #1d2433; --muted: #6b7385; --line: #e3e6ee;
+  --accent: #1f5fd1; --accent-text: #ffffff; --hover: #eef1f7; --danger: #d13438;
+  --radius: 10px;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #1c1f26; --panel: #252a33; --text: #e8ebf2; --muted: #9aa3b5; --line: #343a46;
+  --accent: #4d8dff; --accent-text: #ffffff; --hover: #2e3440; --danger: #ff6b6b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: 0; border-radius: 8px; padding: 7px 12px; background: var(--hover); cursor: pointer; }
+button:hover { filter: brightness(0.97); }
+:root[data-theme="dark"] button:hover { filter: brightness(1.15); }
+button.primary { background: var(--accent); color: var(--accent-text); }
+button.danger { color: var(--danger); }
+input, textarea, select { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 7px 10px; outline: none; }
+input:focus, textarea:focus { border-color: var(--accent); }
+.muted { color: var(--muted); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 5px; border: 2px solid var(--bg); }

@@ -1,0 +1,12 @@
+{
+  "id": "vn.anh7.ghichu",
+  "name": "Ghi chú",
+  "version": "1.0.0",
+  "description": "Ghi chú nhanh, tự lưu khi gõ.",
+  "author": "Anh 7",
+  "entry": "index.html",
+  "icon": "icon.svg",
+  "width": 760,
+  "height": 480,
+  "permissions": []
+}

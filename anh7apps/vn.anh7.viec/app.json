@@ -1,0 +1,12 @@
+{
+  "id": "vn.anh7.viec",
+  "name": "Việc cần làm",
+  "version": "1.0.0",
+  "description": "Danh sách việc cần làm, có hạn chót và lọc theo trạng thái.",
+  "author": "Anh 7",
+  "entry": "index.html",
+  "icon": "icon.svg",
+  "width": 560,
+  "height": 520,
+  "permissions": ["notify"]
+}

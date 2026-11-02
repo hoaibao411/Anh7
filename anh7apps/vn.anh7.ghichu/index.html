@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Ghi chú</title>
+<link rel="stylesheet" href="anh7app://_sdk/anh7-ui.css">
+<script src="anh7app://_sdk/anh7-sdk.js"></script>
+<style>
+  body { display: flex; }
+  aside { width: 230px; border-right: 1px solid var(--line); display: flex; flex-direction: column; background: var(--panel); }
+  .top { display: flex; gap: 6px; padding: 10px; }
+  .top input { flex: 1; min-width: 0; }
+  ul { list-style: none; margin: 0; padding: 0 6px 6px; overflow: auto; flex: 1; }
+  li { padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+  li:hover { background: var(--hover); }
+  li.sel { background: var(--accent); color: var(--accent-text); }
+  li b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  li small { opacity: .7; font-size: 11.5px; }
+  main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  main .bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  main .bar span { flex: 1; font-size: 12px; }
+  textarea { flex: 1; border: 0; border-radius: 0; resize: none; padding: 16px 18px; font-size: 15px; line-height: 1.6; background: var(--bg); }
+  .empty { margin: auto; text-align: center; }
+</style>
+</head>
+<body>
+<aside>
+  <div class="top"><input id="q" type="search" placeholder="Tìm"><button id="add" class="primary" title="Ghi chú mới">+</button></div>
+  <ul id="list"></ul>
+</aside>
+<main id="main"></main>
+<script>
+(function () {
+  var notes = [], cur = null;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function title(n) { return (n.text.split('\n')[0] || 'Ghi chú trống').slice(0, 60); }
+  function when(t) {
+    var d = new Date(t);
+    return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  }
+  function save() { Anh7.saveLater({ notes: notes }); }
+
+  function renderList() {
+    var q = $('q').value.trim().toLowerCase();
+    var ul = $('list');
+    ul.innerHTML = '';
+    notes.slice().sort(function (a, b) { return b.time - a.time; })
+      .filter(function (n) { return !q || n.text.toLowerCase().indexOf(q) >= 0; })
+      .forEach(function (n) {
+        var li = document.createElement('li');
+        if (cur && n.id === cur.id) li.className = 'sel';
+        var b = document.createElement('b'); b.textContent = title(n);
+        var s = document.createElement('small'); s.textContent = when(n.time);
+        li.appendChild(b); li.appendChild(s);
+        li.onclick = function () { open(n); };
+        ul.appendChild(li);
+      });
+  }
+
+  function open(n) {
+    cur = n;
+    var m = $('main');
+    if (!n) {
+      m.innerHTML = '<div class="empty muted">Chưa có ghi chú.<br><br><button class="primary" id="add2">Tạo ghi chú</button></div>';
+      $('add2').onclick = add;
+      renderList();
+      return;
+    }
+    m.innerHTML = '<div class="bar"><span class="muted" id="st"></span><button class="danger" id="del">Xóa</button></div><textarea id="ta" placeholder="Bắt đầu gõ…"></textarea>';
+    var ta = $('ta');
+    ta.value = n.text;
+    $('st').textContent = 'Sửa lúc ' + when(n.time);
+    ta.oninput = function () { n.text = ta.value; n.time = Date.now(); $('st').textContent = 'Đã lưu'; save(); renderList(); };
+    $('del').onclick = function () {
+      if (!confirm('Xóa ghi chú "' + title(n) + '"?')) return;
+      notes = notes.filter(function (x) { return x.id !== n.id; });
+      save();
+      open(notes.slice().sort(function (a, b) { return b.time - a.time; })[0] || null);
+    };
+    ta.focus();
+    renderList();
+  }
+
+  function add() {
+    var n = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: '', time: Date.now() };
+    notes.push(n);
+    save();
+    open(n);
+  }
+
+  $('add').onclick = add;
+  $('q').oninput = renderList;
+  document.addEventListener('keydown', function (e) { if ((e.metaKey || e.ctrlKey) && e.key === 'n') { e.preventDefault(); add(); } });
+
+  Anh7.storage.get().then(function (d) {
+    notes = Array.isArray(d.notes) ? d.notes : [];
+    open(notes.slice().sort(function (a, b) { return b.time - a.time; })[0] || null);
+  });
+})();
+</script>
+</body>
+</html>

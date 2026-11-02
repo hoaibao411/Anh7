@@ -1,0 +1,12 @@
+{
+  "id": "vn.anh7.maytinh",
+  "name": "Máy tính",
+  "version": "1.0.0",
+  "description": "Máy tính cơ bản, hiển thị số kiểu Việt Nam, dùng được bàn phím.",
+  "author": "Anh 7",
+  "entry": "index.html",
+  "icon": "icon.svg",
+  "width": 320,
+  "height": 470,
+  "permissions": []
+}

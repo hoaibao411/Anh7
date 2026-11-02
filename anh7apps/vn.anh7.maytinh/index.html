@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Máy tính</title>
+<link rel="stylesheet" href="anh7app://_sdk/anh7-ui.css">
+<script src="anh7app://_sdk/anh7-sdk.js"></script>
+<style>
+  body { display: flex; flex-direction: column; padding: 10px; gap: 10px; user-select: none; }
+  .scr { text-align: right; padding: 10px 6px 4px; }
+  .scr .ex { min-height: 20px; font-size: 13px; }
+  .scr .val { font-size: 40px; font-weight: 300; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .keys { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .keys button { font-size: 18px; padding: 0; min-height: 44px; background: var(--panel); border: 1px solid var(--line); }
+  .keys button.op { background: var(--hover); }
+  .keys button.eq { background: var(--accent); color: var(--accent-text); border: 0; }
+  .keys button.on { outline: 2px solid var(--accent); }
+</style>
+</head>
+<body>
+<div class="scr"><div class="ex muted" id="ex"></div><div class="val" id="val">0</div></div>
+<div class="keys" id="keys">
+  <button data-k="C" class="op">C</button><button data-k="±" class="op">±</button><button data-k="%" class="op">%</button><button data-k="/" class="op">÷</button>
+  <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button data-k="*" class="op">×</button>
+  <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button data-k="-" class="op">−</button>
+  <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button data-k="+" class="op">+</button>
+  <button data-k="⌫" class="op">⌫</button><button data-k="0">0</button><button data-k=",">,</button><button data-k="=" class="eq">=</button>
+</div>
+<script>
+(function () {
+  // Máy tính kiểu "bấm đến đâu tính đến đó" (như máy tính bỏ túi); không dùng eval
+  var cur = '0', acc = null, op = null, fresh = false, err = false;
+  var SYM = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+
+  function fmt(s) {
+    if (err) return 'Lỗi';
+    var neg = s.charAt(0) === '-';
+    if (neg) s = s.slice(1);
+    var parts = s.split('.');
+    var int = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return (neg ? '-' : '') + int + (parts.length > 1 ? ',' + parts[1] : '');
+  }
+  function num(x) {
+    // Làm tròn 12 chữ số có nghĩa để tránh 0,1 + 0,2 = 0,30000000000000004
+    var r = parseFloat(Number(x).toPrecision(12));
+    if (!isFinite(r)) { err = true; return '0'; }
+    return String(r).indexOf('e') >= 0 ? r.toFixed(10).replace(/\.?0+$/, '') : String(r);
+  }
+  function calc(a, b, o) {
+    a = parseFloat(a); b = parseFloat(b);
+    if (o === '+') return a + b;
+    if (o === '-') return a - b;
+    if (o === '*') return a * b;
+    if (o === '/') { if (b === 0) { err = true; return 0; } return a / b; }
+    return b;
+  }
+  function show() {
+    document.getElementById('val').textContent = fmt(cur);
+    document.getElementById('ex').textContent = (acc !== null && op) ? fmt(acc) + ' ' + SYM[op] : '';
+    document.querySelectorAll('.keys button').forEach(function (b) { b.classList.toggle('on', fresh && b.dataset.k === op); });
+  }
+  function press(k) {
+    if (err && k !== 'C') return;
+    if (/^\d$/.test(k)) {
+      if (fresh || cur === '0') { cur = k; fresh = false; }
+      else if (cur.replace(/[-.]/g, '').length < 15) cur += k;
+    } else if (k === ',') {
+      if (fresh) { cur = '0'; fresh = false; }
+      if (cur.indexOf('.') < 0) cur += '.';
+    } else if (k === 'C') {
+      cur = '0'; acc = null; op = null; fresh = false; err = false;
+    } else if (k === '⌫') {
+      if (!fresh) cur = cur.length > 1 && !(cur.length === 2 && cur[0] === '-') ? cur.slice(0, -1) : '0';
+    } else if (k === '±') {
+      if (cur !== '0') cur = cur.charAt(0) === '-' ? cur.slice(1) : '-' + cur;
+    } else if (k === '%') {
+      cur = num(acc !== null && (op === '+' || op === '-') ? parseFloat(acc) * parseFloat(cur) / 100 : parseFloat(cur) / 100);
+    } else if (SYM[k]) {
+      if (op && acc !== null && !fresh) cur = num(calc(acc, cur, op));
+      acc = cur; op = k; fresh = true;
+    } else if (k === '=') {
+      if (op && acc !== null) { cur = num(calc(acc, cur, op)); acc = null; op = null; fresh = true; }
+    }
+    show();
+  }
+
+  document.getElementById('keys').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (b) press(b.dataset.k);
+  });
+  document.addEventListener('keydown', function (e) {
+    var map = { Enter: '=', '=': '=', Backspace: '⌫', Escape: 'C', Delete: 'C', '.': ',', ',': ',' };
+    var k = map[e.key] || e.key;
+    if (/^[\d+\-*/%=,]$/.test(k) || k === '⌫' || k === 'C') { e.preventDefault(); press(k); }
+  });
+  show();
+})();
+</script>
+</body>
+</html>
