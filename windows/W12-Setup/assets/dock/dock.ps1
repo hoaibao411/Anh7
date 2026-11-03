@@ -51,6 +51,8 @@ $quitEvt = New-Object Threading.EventWaitHandle($false, [Threading.EventResetMod
 
 try {
     Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml, System.Drawing, System.Windows.Forms
+    # Tệp Anh 7 chạy chung tiến trình với Dock -> mở cửa sổ tức thì
+    . (Join-Path $Here 'files.ps1') -Library
 
     # ---------- Cấu hình app ghim ----------
     function Default-Pinned {
@@ -197,6 +199,7 @@ try {
         $wins = [Anh7Dock.Native]::AppWindows($PID)
         $fg = [Anh7Dock.Native]::GetForegroundWindow()
         $sig = ($wins | ForEach-Object { '{0}:{1}:{2}' -f $_.Handle, $_.Minimized, ($_.Handle -eq $fg) }) -join '|'
+        $sig += '|files:' + (($script:FilesWins | ForEach-Object { [string]$_.WindowState + [string]$_.IsActive }) -join ',')
         if (-not $force -and $sig -eq $script:lastSig) { return }
         $script:lastSig = $sig
 
@@ -223,6 +226,16 @@ try {
         $used = @{}
         foreach ($p in @($script:conf.pinned)) {
             $k = ([string]$p.path).ToLowerInvariant()
+            # Nút thư mục (File Explorer) mở Tệp Anh 7, trừ khi người dùng chọn lại File Explorer
+            if ($k.EndsWith('explorer.exe') -and [string]$script:conf.filesApp -ne 'explorer') {
+                $n = $script:FilesWins.Count
+                $act = @($script:FilesWins | Where-Object { $_.IsActive }).Count -gt 0
+                $btn = New-DockButton 'Tệp Anh 7' (Pin-Icon $p) $null $n $act
+                $btn.Add_Click({ Toggle-Files })
+                Add-AppMenu $btn $p $null
+                [void]$panel.Children.Add($btn)
+                continue
+            }
             $ws = if ($groups.Contains($k)) { $groups[$k] } else { $null }
             if ($ws) { $used[$k] = $true }
             $isActive = $ws -and (@($ws | Where-Object { $_.Handle -eq $fg }).Count -gt 0)
@@ -252,6 +265,30 @@ try {
             Add-AppMenu $btn $null $ws
             [void]$panel.Children.Add($btn)
         }
+    }
+
+    # Bấm nút thư mục: chưa mở -> mở Tệp Anh 7; đang ở trước -> thu nhỏ; còn lại -> đưa lên trước
+    function Files-Hwnd($w) { return (New-Object System.Windows.Interop.WindowInteropHelper($w)).Handle }
+    function Toggle-Files {
+        if ($script:FilesWins.Count -eq 0) { Open-FilesWindow; return }
+        $w = $script:FilesWins[$script:FilesWins.Count - 1]
+        if ($w.IsActive -and $w.WindowState -ne 'Minimized') { $w.WindowState = 'Minimized' }
+        else { $w.WindowState = 'Normal'; [Anh7Dock.Native]::BringToFront((Files-Hwnd $w)) }
+        Build-Apps $true
+    }
+    function Open-FilesWindow {
+        try {
+            $w = Files-Open ([Environment]::GetFolderPath('Desktop'))
+            $w.Add_Activated({ Build-Apps $true })
+            $w.Add_Deactivated({ Build-Apps $true })
+            $w.Add_Closed({ Build-Apps $true })
+            $w.Show()
+            [Anh7Dock.Native]::BringToFront((Files-Hwnd $w))
+        } catch {
+            $_ | Out-String | Set-Content -LiteralPath $FilesLog -Encoding UTF8
+            [System.Windows.MessageBox]::Show('Tệp Anh 7 gặp lỗi: ' + $_.Exception.Message) | Out-Null
+        }
+        Build-Apps $true
     }
 
     # Chuột phải trên app: ghim / bỏ ghim / đóng cửa sổ
@@ -329,6 +366,12 @@ try {
             $cur = [string]$script:conf.theme; if (-not $cur) { $cur = 'light' }
             $script:conf | Add-Member -NotePropertyName theme -NotePropertyValue $next[$cur] -Force
             Save-Conf $script:conf; Apply-Theme; Build-Apps $true }),
+        @('Mở cửa sổ Tệp Anh 7 mới', { Open-FilesWindow }),
+        @('Nút thư mục mở: Tệp Anh 7 / File Explorer (đổi)', {
+            $v = if ([string]$script:conf.filesApp -eq 'explorer') { 'anh7' } else { 'explorer' }
+            $script:conf | Add-Member -NotePropertyName filesApp -NotePropertyValue $v -Force
+            Save-Conf $script:conf; Build-Apps $true
+            [System.Windows.MessageBox]::Show($(if ($v -eq 'anh7') { 'Nút thư mục sẽ mở Tệp Anh 7.' } else { 'Nút thư mục sẽ mở File Explorer của Windows.' }), 'Anh 7 Dock') | Out-Null }),
         @('Tải lại Dock', { $script:conf = Load-Conf; Apply-Theme; Build-Apps $true }),
         @('Thoát Anh 7 Dock (hiện lại thanh tác vụ Windows)', { $win.Close() })
     )) {

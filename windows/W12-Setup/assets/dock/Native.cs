@@ -6,6 +6,7 @@
 // =====================================================================
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -115,6 +116,15 @@ namespace Anh7Dock
             if (GetForegroundWindow() == h && !IsIconic(h)) { ShowWindow(h, SW_MINIMIZE); return; }
             if (IsIconic(h)) ShowWindow(h, SW_RESTORE);
             // Mẹo nhấn-nhả Alt để Windows cho phép đổi cửa sổ trước
+            keybd_event(0x12, 0, 0, UIntPtr.Zero);
+            keybd_event(0x12, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            SetForegroundWindow(h);
+        }
+
+        // Đưa cửa sổ lên trước (không thu nhỏ nếu nó đang ở trước)
+        public static void BringToFront(IntPtr h)
+        {
+            if (IsIconic(h)) ShowWindow(h, SW_RESTORE);
             keybd_event(0x12, 0, 0, UIntPtr.Zero);
             keybd_event(0x12, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
             SetForegroundWindow(h);
@@ -238,6 +248,86 @@ namespace Anh7Dock
             d.cbSize = Marshal.SizeOf(typeof(APPBARDATA));
             d.hWnd = dock;
             SHAppBarMessage(ABM_REMOVE, ref d);
+        }
+    }
+
+    // =================================================================
+    //  TỆP ANH 7: một mục file/thư mục để hiển thị (tự báo giao diện khi đổi icon)
+    // =================================================================
+    public class FileItem : INotifyPropertyChanged
+    {
+        public string Name { get; set; }
+        public string Path { get; set; }
+        public bool IsDir { get; set; }
+        public string Kind { get; set; }
+        public string SizeText { get; set; }
+        public string DateText { get; set; }
+        public long Size { get; set; }
+        public DateTime Modified { get; set; }
+        object icon;
+        public object Icon
+        {
+            get { return icon; }
+            set { icon = value; if (PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs("Icon")); }
+        }
+        public event PropertyChangedEventHandler PropertyChanged;
+    }
+
+    // Ảnh thu nhỏ / icon của file do Windows tạo (giống Explorer), trả về điểm ảnh BGRA đã nhân alpha
+    public static class Thumbs
+    {
+        [ComImport, Guid("bcc18b79-ba16-442f-80c4-8a59c30c463b"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IShellItemImageFactory
+        {
+            [PreserveSig] int GetImage(SIZE size, int flags, out IntPtr phbm);
+        }
+        [StructLayout(LayoutKind.Sequential)] struct SIZE { public int cx; public int cy; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct BITMAP { public int bmType, bmWidth, bmHeight, bmWidthBytes; public ushort bmPlanes, bmBitsPixel; public IntPtr bmBits; }
+        [StructLayout(LayoutKind.Sequential)]
+        struct BITMAPINFOHEADER { public int biSize, biWidth, biHeight; public short biPlanes, biBitCount; public int biCompression, biSizeImage, biXPelsPerMeter, biYPelsPerMeter, biClrUsed, biClrImportant; }
+        [StructLayout(LayoutKind.Sequential)]
+        struct DIBSECTION { public BITMAP dsBm; public BITMAPINFOHEADER dsBmih; public int b0, b1, b2; public IntPtr dshSection; public int dsOffset; }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = true)]
+        static extern int SHCreateItemFromParsingName(string path, IntPtr pbc, ref Guid riid, out IShellItemImageFactory ppv);
+        [DllImport("gdi32.dll")] static extern int GetObject(IntPtr h, int size, ref DIBSECTION ds);
+        [DllImport("gdi32.dll")] static extern bool DeleteObject(IntPtr h);
+
+        // flags: 0 = ảnh thu nhỏ nếu có, 4 = chỉ icon (nhanh)
+        public static byte[] Get(string path, int size, int flags, out int width, out int height)
+        {
+            width = 0; height = 0;
+            IShellItemImageFactory f = null;
+            IntPtr hbm = IntPtr.Zero;
+            try
+            {
+                Guid iid = typeof(IShellItemImageFactory).GUID;
+                if (SHCreateItemFromParsingName(path, IntPtr.Zero, ref iid, out f) != 0 || f == null) return null;
+                SIZE sz; sz.cx = size; sz.cy = size;
+                if (f.GetImage(sz, flags, out hbm) != 0 || hbm == IntPtr.Zero) return null;
+                var ds = new DIBSECTION();
+                if (GetObject(hbm, Marshal.SizeOf(typeof(DIBSECTION)), ref ds) == 0 || ds.dsBm.bmBits == IntPtr.Zero || ds.dsBm.bmBitsPixel != 32) return null;
+                int w = ds.dsBm.bmWidth, h = ds.dsBm.bmHeight, stride = w * 4;
+                var raw = new byte[stride * h];
+                Marshal.Copy(ds.dsBm.bmBits, raw, 0, raw.Length);
+                // DIB thường lưu từ dưới lên -> lật lại cho đúng chiều
+                if (ds.dsBmih.biHeight > 0)
+                {
+                    var flipped = new byte[raw.Length];
+                    for (int y = 0; y < h; y++) Buffer.BlockCopy(raw, (h - 1 - y) * stride, flipped, y * stride, stride);
+                    raw = flipped;
+                }
+                width = w; height = h;
+                return raw;
+            }
+            catch { return null; }
+            finally
+            {
+                if (hbm != IntPtr.Zero) DeleteObject(hbm);
+                if (f != null) Marshal.ReleaseComObject(f);
+            }
         }
     }
 }

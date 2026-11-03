@@ -13,7 +13,7 @@ $ErrorActionPreference = 'Stop'
 # ---------- Thông tin dự án (sửa ở đây nếu cần) ----------
 $App = @{
     Name    = 'Anh 7 cho Windows'
-    Version = '1.4.0'
+    Version = '1.5.0'
     Author  = 'hoaibao411'
     Project = 'Anh 7'
     Repo    = 'https://github.com/hoaibao411/Anh7'
@@ -287,6 +287,7 @@ public static class W12Native {
         New-Item -ItemType Directory -Path $StartMenuDir -Force | Out-Null
         New-Shortcut (Join-Path $StartMenuDir 'Anh 7 Dock.lnk') $runArgs 'Bật thanh tác vụ kiểu Win12 của Anh 7'
         New-Shortcut (Join-Path $StartMenuDir 'Tắt Anh 7 Dock.lnk') ($runArgs + ' -Stop') 'Tắt Anh 7 Dock, hiện lại thanh tác vụ Windows'
+        New-Shortcut (Join-Path $StartMenuDir 'Tệp Anh 7.lnk') ('-NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File "' + (Join-Path $DockDir 'files.ps1') + '"') 'Trình quản lý file kiểu Finder của Anh 7'
         if ($startup) { New-Shortcut $StartupLnk $runArgs 'Anh 7 Dock' }
         elseif (Test-Path -LiteralPath $StartupLnk) { Remove-Item -LiteralPath $StartupLnk -Force }
         Start-Process -FilePath $PsExe -ArgumentList $runArgs -WindowStyle Hidden
