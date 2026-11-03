@@ -53,6 +53,8 @@ try {
     Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml, System.Drawing, System.Windows.Forms
     # Tệp Anh 7 chạy chung tiến trình với Dock -> mở cửa sổ tức thì
     . (Join-Path $Here 'files.ps1') -Library
+    . (Join-Path $Here 'start.ps1')
+    Add-Type -AssemblyName System.DirectoryServices.AccountManagement -ErrorAction SilentlyContinue
 
     # ---------- Cấu hình app ghim ----------
     function Default-Pinned {
@@ -136,7 +138,8 @@ try {
     function Pin-Icon($p) {
         if ($p.icon -and $Icons.ContainsKey([string]$p.icon)) { return $Icons[[string]$p.icon] }
         if ($p.glyph -and $GlyphToIcon.ContainsKey(([string]$p.glyph).ToUpperInvariant())) { return $Icons[$GlyphToIcon[([string]$p.glyph).ToUpperInvariant()]] }
-        $img = Exe-Icon ([string]$p.path)
+        $pp = [string]$p.path
+        $img = if ($pp -like 'shell:*') { Files-Thumb $pp 64 4 } else { Exe-Icon $pp }
         if ($img) { return $img }
         return $Icons['app']
     }
@@ -208,7 +211,8 @@ try {
 
         # Start, Tìm kiếm, Task view
         $b = New-DockButton 'Start' $startImg $null 0 $false
-        $b.Add_Click({ [Anh7Dock.Native]::Keys([byte[]]@(0x5B)) }); [void]$panel.Children.Add($b)
+        $b.Add_Click({ if ([string]$script:conf.startMenu -eq 'windows') { [Anh7Dock.Native]::Keys([byte[]]@(0x5B)) } else { Toggle-Start } })
+        [void]$panel.Children.Add($b)
         $b = New-DockButton 'Tìm kiếm (Win+S)' $Icons['search'] $null 0 $false
         $b.Add_Click({ [Anh7Dock.Native]::Keys([byte[]]@(0x5B, 0x53)) }); [void]$panel.Children.Add($b)
         $b = New-DockButton 'Các cửa sổ (Win+Tab)' $Icons['tasks'] $null 0 $false
@@ -367,6 +371,12 @@ try {
             $script:conf | Add-Member -NotePropertyName theme -NotePropertyValue $next[$cur] -Force
             Save-Conf $script:conf; Apply-Theme; Build-Apps $true }),
         @('Mở cửa sổ Tệp Anh 7 mới', { Open-FilesWindow }),
+        @('Menu Start: Anh 7 / Windows (đổi)', {
+            $v = if ([string]$script:conf.startMenu -eq 'windows') { 'anh7' } else { 'windows' }
+            $script:conf | Add-Member -NotePropertyName startMenu -NotePropertyValue $v -Force
+            Save-Conf $script:conf
+            [Anh7Dock.WinKey]::Enabled = ($v -eq 'anh7')
+            [System.Windows.MessageBox]::Show($(if ($v -eq 'anh7') { 'Nút Start và phím Windows mở Start của Anh 7.' } else { 'Nút Start và phím Windows mở Start của Windows.' }), 'Anh 7 Dock') | Out-Null }),
         @('Nút thư mục mở: Tệp Anh 7 / File Explorer (đổi)', {
             $v = if ([string]$script:conf.filesApp -eq 'explorer') { 'anh7' } else { 'explorer' }
             $script:conf | Add-Member -NotePropertyName filesApp -NotePropertyValue $v -Force
@@ -409,6 +419,8 @@ try {
     })
 
     $win.Add_Closing({
+        try { [Anh7Dock.WinKey]::Stop() } catch { }
+        try { Start-Hide } catch { }
         try { if ($script:hwnd -ne [IntPtr]::Zero) { [Anh7Dock.Native]::RemoveAppBar($script:hwnd) } } catch { }
         Restore-Taskbar
     })
@@ -419,18 +431,33 @@ try {
     $script:tick = 0
     $fast.Add_Tick({
         if ($quitEvt.WaitOne(0)) { $win.Close(); return }
-        # Windows hay tự hiện lại thanh tác vụ -> ẩn lại (trừ lúc đang mở Start/Tìm kiếm)
-        if (-not [Anh7Dock.Native]::ShellPopupOpen()) { [void][Anh7Dock.Native]::HideTaskbar() }
         Update-Clock
         try { Build-Apps $false } catch { }
         $script:tick++
         if ($script:tick % 20 -eq 0) { try { Update-Status } catch { } }
     })
 
+    # Hẹn giờ nhanh: giữ thanh tác vụ cũ luôn ẩn + nhận phím Windows
+    $script:lastTaps = 0
+    $hideT = New-Object Windows.Threading.DispatcherTimer
+    $hideT.Interval = [TimeSpan]::FromMilliseconds(150)
+    $hideT.Add_Tick({
+        $useWin = [string]$script:conf.startMenu -eq 'windows'
+        # Chỉ khi dùng Start của Windows mới để thanh tác vụ cũ hiện cùng menu Start/Tìm kiếm
+        if (-not ($useWin -and [Anh7Dock.Native]::ShellPopupOpen())) { [void][Anh7Dock.Native]::HideTaskbar() }
+        $t = [Anh7Dock.WinKey]::Taps
+        if ($t -ne $script:lastTaps) { $script:lastTaps = $t; Toggle-Start }
+    })
+
     Update-Clock
     Update-Status
     Build-Apps $true
+    [Anh7Dock.WinKey]::Enabled = ([string]$script:conf.startMenu -ne 'windows')
+    try { [Anh7Dock.WinKey]::Start() } catch { }
     $fast.Start()
+    $hideT.Start()
+    # Nạp sẵn danh sách app cho Start (sau khi Dock đã hiện)
+    $win.Dispatcher.BeginInvoke([Action]{ try { Start-LoadApps $true } catch { } }, [Windows.Threading.DispatcherPriority]::ApplicationIdle) | Out-Null
     [void]$win.ShowDialog()
 }
 catch {

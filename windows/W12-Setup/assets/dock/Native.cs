@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Threading;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -129,6 +130,10 @@ namespace Anh7Dock
             keybd_event(0x12, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
             SetForegroundWindow(h);
         }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)] static extern int SHEmptyRecycleBinW(IntPtr hwnd, string root, uint flags);
+        // Dọn sạch Thùng rác mọi ổ (không hỏi lại: Tệp Anh 7 đã hỏi trước)
+        public static int EmptyRecycleBin(IntPtr owner) { return SHEmptyRecycleBinW(owner, null, 1 | 2); }
 
         // Đóng cửa sổ như bấm nút X (app vẫn có thể hỏi lưu file)
         public static void CloseWindow(IntPtr h) { PostMessageW(h, 0x0010, IntPtr.Zero, IntPtr.Zero); }
@@ -328,6 +333,102 @@ namespace Anh7Dock
                 if (hbm != IntPtr.Zero) DeleteObject(hbm);
                 if (f != null) Marshal.ReleaseComObject(f);
             }
+        }
+    }
+
+    // =================================================================
+    //  PHÍM WINDOWS -> mở Start của Anh 7
+    //  Chạy trên luồng riêng có vòng nhận tin nhắn riêng, nên Dock bận cũng không làm gõ phím bị chậm.
+    //  - Bấm-nhả phím Windows một mình: chặn lại, tăng Taps (Dock đọc Taps để mở Start Anh 7)
+    //  - Phím Windows + phím khác (Win+E, Win+D, Win+Shift+S...): phát lại nguyên tổ hợp cho Windows
+    //  - Win+L: khóa máy như bình thường
+    // =================================================================
+    public static class WinKey
+    {
+        delegate IntPtr HookProc(int code, IntPtr wParam, IntPtr lParam);
+        [StructLayout(LayoutKind.Sequential)]
+        struct KBDLLHOOKSTRUCT { public uint vkCode, scanCode, flags, time; public IntPtr extra; }
+        [StructLayout(LayoutKind.Sequential)]
+        struct MSG { public IntPtr hwnd; public uint message; public IntPtr wParam, lParam; public uint time; public int x, y; }
+        [DllImport("user32.dll", SetLastError = true)] static extern IntPtr SetWindowsHookEx(int id, HookProc fn, IntPtr mod, uint thread);
+        [DllImport("user32.dll")] static extern bool UnhookWindowsHookEx(IntPtr h);
+        [DllImport("user32.dll")] static extern IntPtr CallNextHookEx(IntPtr h, int code, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")] static extern int GetMessage(out MSG m, IntPtr hwnd, uint min, uint max);
+        [DllImport("user32.dll")] static extern bool PostThreadMessage(uint thread, uint msg, IntPtr w, IntPtr l);
+        [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+        [DllImport("user32.dll")] static extern bool LockWorkStation();
+        [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern IntPtr GetModuleHandle(string name);
+
+        static IntPtr hook = IntPtr.Zero;
+        static HookProc proc;
+        static Thread thread;
+        static uint threadId;
+        static bool winDown, combo;
+        public static volatile int Taps;
+        public static volatile bool Enabled = true;
+
+        public static void Start()
+        {
+            if (thread != null) return;
+            thread = new Thread(Run);
+            thread.IsBackground = true;
+            thread.Start();
+        }
+
+        public static void Stop()
+        {
+            if (thread == null) return;
+            PostThreadMessage(threadId, 0x0012, IntPtr.Zero, IntPtr.Zero);   // WM_QUIT
+            thread = null;
+        }
+
+        static void Run()
+        {
+            threadId = GetCurrentThreadId();
+            proc = Hook;
+            hook = SetWindowsHookEx(13, proc, GetModuleHandle(null), 0);     // WH_KEYBOARD_LL
+            MSG m;
+            while (GetMessage(out m, IntPtr.Zero, 0, 0) > 0) { }
+            if (hook != IntPtr.Zero) UnhookWindowsHookEx(hook);
+            hook = IntPtr.Zero;
+        }
+
+        static IntPtr Hook(int code, IntPtr wParam, IntPtr lParam)
+        {
+            if (code >= 0 && Enabled)
+            {
+                var k = (KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(KBDLLHOOKSTRUCT));
+                bool injected = (k.flags & 0x10) != 0;
+                int msg = (int)wParam;
+                bool down = msg == 0x100 || msg == 0x104;
+                bool up = msg == 0x101 || msg == 0x105;
+                bool isWin = k.vkCode == 0x5B || k.vkCode == 0x5C;
+                if (!injected)
+                {
+                    if (isWin && down)
+                    {
+                        if (!winDown) { winDown = true; combo = false; }
+                        if (!combo) return (IntPtr)1;            // giữ lại, chưa biết bấm một mình hay tổ hợp
+                    }
+                    else if (isWin && up)
+                    {
+                        winDown = false;
+                        if (!combo) { Taps++; return (IntPtr)1; } // bấm một mình -> Start Anh 7
+                        // tổ hợp: để phím nhả đi qua, khớp với phím Windows đã phát lại
+                    }
+                    else if (winDown && down && !combo)
+                    {
+                        combo = true;
+                        if (k.vkCode == 0x4C) { LockWorkStation(); return (IntPtr)1; }   // Win+L
+                        uint ext = (k.flags & 1) != 0 ? 1u : 0u;
+                        keybd_event(0x5B, 0, 0, UIntPtr.Zero);
+                        keybd_event((byte)k.vkCode, (byte)k.scanCode, ext, UIntPtr.Zero);
+                        return (IntPtr)1;
+                    }
+                }
+            }
+            return CallNextHookEx(hook, code, wParam, lParam);
         }
     }
 }

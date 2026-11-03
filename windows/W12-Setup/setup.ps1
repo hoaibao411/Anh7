@@ -13,7 +13,7 @@ $ErrorActionPreference = 'Stop'
 # ---------- Thông tin dự án (sửa ở đây nếu cần) ----------
 $App = @{
     Name    = 'Anh 7 cho Windows'
-    Version = '1.5.0'
+    Version = '1.6.0'
     Author  = 'hoaibao411'
     Project = 'Anh 7'
     Repo    = 'https://github.com/hoaibao411/Anh7'

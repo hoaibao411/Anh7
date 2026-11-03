@@ -1,4 +1,4 @@
-﻿ANH 7 CHO WINDOWS — Giao diện W12 — phiên bản 1.5.0
+﻿ANH 7 CHO WINDOWS — Giao diện W12 — phiên bản 1.6.0
 Phiên bản Windows của Anh 7 (bản gốc chạy trên macOS) · tác giả: hoaibao411 · https://github.com/hoaibao411/Anh7
 Mã nguồn mở (EPL-2.0). Không liên kết với Microsoft.
 
@@ -18,6 +18,9 @@ TRÌNH CÀI SẼ ĐỔI
 - Tệp Anh 7: trình quản lý file kiểu Finder (nút thư mục trên Dock, hoặc Start > Anh 7 > Tệp Anh 7).
   Lưới/danh sách, tìm, mở, đổi tên (F2), thư mục mới, đưa vào Thùng rác (Delete), Alt+← / Alt+→.
   Muốn nút thư mục mở lại File Explorer: nút tròn trên Dock > "Nút thư mục mở: ... (đổi)".
+- Anh 7 Start: menu Start kiểu Win12 (nút W12 trên Dock hoặc phím Windows). Tìm app, Đã ghim,
+  Tất cả ứng dụng, nút nguồn. Chuột phải để ghim/bỏ ghim. Phím tắt Win+E, Win+D, Win+L... vẫn dùng bình thường.
+  Muốn dùng lại Start của Windows: nút tròn trên Dock > "Menu Start: Anh 7 / Windows (đổi)".
 
 AN TOÀN
 - Chỉ đổi cài đặt của tài khoản đang dùng. Không cần quyền quản trị, không sửa file hệ thống.

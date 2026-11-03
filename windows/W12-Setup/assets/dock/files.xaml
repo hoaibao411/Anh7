@@ -165,6 +165,10 @@
                          VerticalAlignment="Center" Margin="32,0,0,0"/>
             </Grid>
           </Border>
+          <Button x:Name="BtnEmpty" Style="{StaticResource Flat}" DockPanel.Dock="Right" Visibility="Collapsed" Foreground="#D13438"
+                  Content="Dọn sạch Thùng rác" Margin="4,0,0,0"/>
+          <Button x:Name="BtnRestore" Style="{StaticResource Flat}" DockPanel.Dock="Right" Visibility="Collapsed"
+                  Content="Khôi phục" Margin="4,0,0,0"/>
           <Button x:Name="BtnNewFolder" Style="{StaticResource Flat}" ToolTip="Thư mục mới" DockPanel.Dock="Right">
             <TextBlock Text="&#xE8F4;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"/>
           </Button>

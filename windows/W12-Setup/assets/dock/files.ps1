@@ -119,12 +119,12 @@ function Files-Open([string]$start) {
     $w.Tag = $st
     foreach ($n in @('Shell', 'Side', 'Lights', 'BtnClose', 'BtnMin', 'BtnZoom', 'SideFav', 'SideLoc', 'Toolbar', 'BtnBack', 'BtnFwd',
                      'TxtSearch', 'SearchHint', 'BtnNewFolder', 'BtnGrid', 'BtnList', 'TxtTitle', 'ListHeader', 'FileList', 'TxtEmpty',
-                     'TxtCount', 'PathBar')) {
+                     'TxtCount', 'PathBar', 'BtnRestore', 'BtnEmpty')) {
         $st.Ui[$n] = $w.FindName($n)
         if ($st.Ui[$n] -is [Windows.FrameworkElement]) { $st.Ui[$n].Tag = $(if ($st.Ui[$n].Tag) { $st.Ui[$n].Tag } else { $st }) }
     }
     $ui = $st.Ui
-    foreach ($n in @('BtnClose', 'BtnMin', 'BtnZoom', 'BtnBack', 'BtnFwd', 'TxtSearch', 'BtnNewFolder', 'BtnGrid', 'BtnList', 'FileList', 'Toolbar', 'Lights')) {
+    foreach ($n in @('BtnClose', 'BtnMin', 'BtnZoom', 'BtnBack', 'BtnFwd', 'TxtSearch', 'BtnNewFolder', 'BtnGrid', 'BtnList', 'FileList', 'Toolbar', 'Lights', 'BtnRestore', 'BtnEmpty')) {
         $ui[$n].Tag = $st
     }
     try { $w.Icon = Files-LoadPng (Join-Path $FilesHere 'ic-folder.png') } catch { }
@@ -136,7 +136,7 @@ function Files-Open([string]$start) {
         $label = if ($d.VolumeLabel) { $d.VolumeLabel + ' (' + $d.Name.TrimEnd('\') + ')' } else { 'Ổ ' + $d.Name.TrimEnd('\') }
         [void]$ui.SideLoc.Children.Add((Files-SideButton $st $label 0xEDA2 $d.RootDirectory.FullName))
     }
-    [void]$ui.SideLoc.Children.Add((Files-SideButton $st 'Thùng rác' 0xE74D { Start-Process explorer.exe 'shell:RecycleBinFolder' }))
+    [void]$ui.SideLoc.Children.Add((Files-SideButton $st 'Thùng rác' 0xE74D '::trash'))
 
     # Nút tròn
     $ui.BtnClose.Add_Click({ param($s, $e) $s.Tag.Win.Close() })
@@ -159,11 +159,14 @@ function Files-Open([string]$start) {
     $ui.BtnGrid.Add_Click({ param($s, $e) Files-SetMode $s.Tag 'grid' })
     $ui.BtnList.Add_Click({ param($s, $e) Files-SetMode $s.Tag 'list' })
     $ui.BtnNewFolder.Add_Click({ param($s, $e) Files-NewFolder $s.Tag })
+    $ui.BtnRestore.Add_Click({ param($s, $e) Files-TrashRestore $s.Tag })
+    $ui.BtnEmpty.Add_Click({ param($s, $e) Files-TrashEmpty $s.Tag })
     $ui.TxtSearch.Add_TextChanged({ param($s, $e)
         $s.Tag.Ui.SearchHint.Visibility = $(if ($s.Text) { 'Collapsed' } else { 'Visible' })
         Files-Render $s.Tag
     })
     $ui.FileList.Add_MouseDoubleClick({ param($s, $e)
+        if ($s.Tag.Path -eq '::trash') { return }
         $it = $s.SelectedItem
         if ($it -and ($e.OriginalSource -is [Windows.FrameworkElement]) -and $e.OriginalSource.DataContext -eq $it) { Files-OpenItem $s.Tag $it }
     })
@@ -182,7 +185,20 @@ function Files-Open([string]$start) {
         $mi.Add_Click($def[1])
         [void]$m.Items.Add($mi)
     }
+    $st.MenuNormal = $m
     $ui.FileList.ContextMenu = $m
+
+    $mt = New-Object Windows.Controls.ContextMenu
+    foreach ($def in @(
+        @('Khôi phục về chỗ cũ', { param($s, $e) Files-TrashRestore $s.Tag }),
+        @('Xóa vĩnh viễn…', { param($s, $e) Files-TrashDelete $s.Tag })
+    )) {
+        $mi = New-Object Windows.Controls.MenuItem
+        $mi.Header = $def[0]; $mi.Tag = $st
+        $mi.Add_Click($def[1])
+        [void]$mt.Items.Add($mi)
+    }
+    $st.MenuTrash = $mt
 
     # Phím tắt
     $w.Add_KeyDown({ param($s, $e)
@@ -198,10 +214,10 @@ function Files-Open([string]$start) {
         if ($key -eq 'F5') { Files-Go $st2 $st2.Path $false; $e.Handled = $true; return }
         if ($inSearch) { if ($key -eq 'Escape') { $st2.Ui.TxtSearch.Text = '' }; return }
         switch ($key) {
-            'Return' { foreach ($it in @($st2.Ui.FileList.SelectedItems)) { Files-OpenItem $st2 $it }; $e.Handled = $true }
+            'Return' { if ($st2.Path -ne '::trash') { foreach ($it in @($st2.Ui.FileList.SelectedItems)) { Files-OpenItem $st2 $it } }; $e.Handled = $true }
             'Back'   { Files-Up $st2; $e.Handled = $true }
-            'Delete' { Files-Trash $st2; $e.Handled = $true }
-            'F2'     { Files-Rename $st2; $e.Handled = $true }
+            'Delete' { if ($st2.Path -eq '::trash') { Files-TrashDelete $st2 } else { Files-Trash $st2 }; $e.Handled = $true }
+            'F2'     { if ($st2.Path -ne '::trash') { Files-Rename $st2 }; $e.Handled = $true }
         }
     })
 
@@ -251,7 +267,104 @@ function Files-Zoom($st) {
     }
 }
 
+# Ghi lịch sử, tiêu đề, nút; dùng chung cho thư mục thường và Thùng rác
+function Files-SetLocation($st, [string]$path, [string]$title, [bool]$addHist) {
+    $st.Path = $path
+    if ($addHist) {
+        while ($st.Hist.Count -gt $st.Idx + 1) { $st.Hist.RemoveAt($st.Hist.Count - 1) }
+        [void]$st.Hist.Add($path)
+        $st.Idx = $st.Hist.Count - 1
+    }
+    $trash = $path -eq '::trash'
+    $st.Ui.TxtSearch.Text = ''
+    $st.Ui.TxtTitle.Text = $title
+    $st.Win.Title = $title + ' — Tệp Anh 7'
+    $st.Ui.BtnBack.IsEnabled = $st.Idx -gt 0
+    $st.Ui.BtnFwd.IsEnabled = $st.Idx -lt $st.Hist.Count - 1
+    $st.Ui.BtnNewFolder.Visibility = $(if ($trash) { 'Collapsed' } else { 'Visible' })
+    $st.Ui.BtnRestore.Visibility = $(if ($trash) { 'Visible' } else { 'Collapsed' })
+    $st.Ui.BtnEmpty.Visibility = $(if ($trash) { 'Visible' } else { 'Collapsed' })
+    $st.Ui.FileList.ContextMenu = $(if ($trash) { $st.MenuTrash } else { $st.MenuNormal })
+}
+
+# ---------- Thùng rác (đọc qua Shell của Windows) ----------
+function Files-GoTrash($st, [bool]$addHist) {
+    $st.TrashMap = @{}
+    $items = New-Object System.Collections.Generic.List[Anh7Dock.FileItem]
+    try {
+        $sh = New-Object -ComObject Shell.Application
+        $ns = $sh.NameSpace(10)   # 10 = Thùng rác
+        foreach ($ci in @($ns.Items())) {
+            $it = New-Object Anh7Dock.FileItem
+            $it.Name = $ci.Name
+            $it.Path = $ci.Path
+            $it.IsDir = [bool]$ci.IsFolder
+            $loc = $ns.GetDetailsOf($ci, 1)    # cột "Vị trí gốc"
+            $when = $ns.GetDetailsOf($ci, 2)   # cột "Ngày xóa"
+            $it.Kind = $(if ($loc) { 'Từ: ' + $loc } else { 'Đã xóa' })
+            $it.DateText = ($when -replace '[\u200e\u200f]', '')
+            $it.SizeText = $(if ($it.IsDir) { '—' } else { Files-SizeText ([long]$ci.Size) })
+            $it.Icon = $(if ($it.IsDir) { $script:FilesFolderIcon } else { Files-QuickIcon $it })
+            $st.TrashMap[$it.Path] = $ci
+            $items.Add($it)
+        }
+    } catch {
+        [Windows.MessageBox]::Show($st.Win, 'Không đọc được Thùng rác: ' + $_.Exception.Message, 'Tệp Anh 7') | Out-Null
+    }
+    $st.All = @($items | Sort-Object -Property Name)
+    Files-SetLocation $st '::trash' 'Thùng rác' $addHist
+    $st.Ui.BtnEmpty.IsEnabled = $st.All.Count -gt 0
+    $st.Ui.BtnRestore.IsEnabled = $st.All.Count -gt 0
+    $bar = $st.Ui.PathBar
+    $bar.Children.Clear()
+    $tb = New-Object Windows.Controls.TextBlock
+    $tb.Text = 'Thùng rác · mục ở đây có thể khôi phục về chỗ cũ'; $tb.FontSize = 11.5; $tb.Margin = New-Object Windows.Thickness(5, 0, 0, 0)
+    [void]$bar.Children.Add($tb)
+    Files-Render $st
+    if ($st.All.Count -eq 0) { $st.Ui.TxtEmpty.Text = 'Thùng rác trống' }
+}
+
+function Files-TrashSelected($st) {
+    $sel = @($st.Ui.FileList.SelectedItems)
+    if ($sel.Count -eq 0) {
+        [Windows.MessageBox]::Show($st.Win, 'Chọn mục cần thao tác trước.', 'Tệp Anh 7') | Out-Null
+    }
+    return $sel
+}
+
+function Files-TrashRestore($st) {
+    $sel = Files-TrashSelected $st
+    if ($sel.Count -eq 0) { return }
+    foreach ($it in $sel) {
+        $ci = $st.TrashMap[$it.Path]
+        if ($ci) { try { $ci.InvokeVerb('undelete') } catch { } }
+    }
+    Start-Sleep -Milliseconds 300
+    Files-GoTrash $st $false
+}
+
+function Files-TrashDelete($st) {
+    $sel = Files-TrashSelected $st
+    if ($sel.Count -eq 0) { return }
+    $msg = 'Xóa vĩnh viễn ' + $sel.Count + ' mục? Thao tác này KHÔNG khôi phục được.'
+    if ([Windows.MessageBox]::Show($st.Win, $msg, 'Tệp Anh 7', 'YesNo', 'Warning') -ne 'Yes') { return }
+    foreach ($it in $sel) {
+        try { Remove-Item -LiteralPath $it.Path -Recurse -Force } catch { }
+    }
+    Files-GoTrash $st $false
+}
+
+function Files-TrashEmpty($st) {
+    if ($st.All.Count -eq 0) { return }
+    $msg = 'Dọn sạch Thùng rác (' + $st.All.Count + ' mục)? Thao tác này KHÔNG khôi phục được.'
+    if ([Windows.MessageBox]::Show($st.Win, $msg, 'Tệp Anh 7', 'YesNo', 'Warning') -ne 'Yes') { return }
+    $h = (New-Object System.Windows.Interop.WindowInteropHelper($st.Win)).Handle
+    [void][Anh7Dock.Native]::EmptyRecycleBin($h)
+    Files-GoTrash $st $false
+}
+
 function Files-Go($st, [string]$path, [bool]$addHist) {
+    if ($path -eq '::trash') { Files-GoTrash $st $addHist; return }
     try {
         $dir = New-Object IO.DirectoryInfo($path)
         $entries = $dir.GetFileSystemInfos()
@@ -279,18 +392,8 @@ function Files-Go($st, [string]$path, [bool]$addHist) {
     $st.All = @($items | Sort-Object -Property @{ Expression = { -not $_.IsDir } }, @{ Expression = { $_.Name } })
     foreach ($it in $st.All) { $it.Icon = Files-QuickIcon $it }
 
-    $st.Path = $dir.FullName
-    if ($addHist) {
-        while ($st.Hist.Count -gt $st.Idx + 1) { $st.Hist.RemoveAt($st.Hist.Count - 1) }
-        [void]$st.Hist.Add($st.Path)
-        $st.Idx = $st.Hist.Count - 1
-    }
-    $st.Ui.TxtSearch.Text = ''
     $title = if ($dir.Parent) { $dir.Name } else { $dir.FullName.TrimEnd('\') }
-    $st.Ui.TxtTitle.Text = $title
-    $st.Win.Title = $title + ' — Tệp Anh 7'
-    $st.Ui.BtnBack.IsEnabled = $st.Idx -gt 0
-    $st.Ui.BtnFwd.IsEnabled = $st.Idx -lt $st.Hist.Count - 1
+    Files-SetLocation $st $dir.FullName $title $addHist
     Files-PathBar $st
     Files-Render $st
 }
@@ -356,6 +459,7 @@ function Files-History($st, [int]$step) {
 }
 
 function Files-Up($st) {
+    if ($st.Path -eq '::trash') { return }
     $d = New-Object IO.DirectoryInfo($st.Path)
     if ($d.Parent) { Files-Go $st $d.Parent.FullName $true }
 }
@@ -368,6 +472,7 @@ function Files-OpenItem($st, $it) {
 }
 
 function Files-NewFolder($st) {
+    if ($st.Path -eq '::trash') { return }
     $base = Join-Path $st.Path 'Thư mục mới'
     $p = $base; $n = 2
     while (Test-Path -LiteralPath $p) { $p = $base + ' (' + $n + ')'; $n++ }
