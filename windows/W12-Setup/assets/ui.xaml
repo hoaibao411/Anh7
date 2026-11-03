@@ -1,0 +1,393 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Anh 7 cho Windows — Cài đặt" Width="900" Height="700"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI Variable Display, Segoe UI" Foreground="#E6EAF5"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+
+  <Window.Resources>
+    <LinearGradientBrush x:Key="AccentGrad" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#2563EB" Offset="0"/>
+      <GradientStop Color="#7C3AED" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Nút thường -->
+    <Style x:Key="Btn" TargetType="Button">
+      <Setter Property="Foreground" Value="#E6EAF5"/>
+      <Setter Property="Background" Value="#18213B"/>
+      <Setter Property="BorderBrush" Value="#2A3658"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="20,9"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="B" CornerRadius="9" Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="B" Property="Opacity" Value="0.85"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="B" Property="Opacity" Value="0.35"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Nút chính (gradient) -->
+    <Style x:Key="BtnPri" TargetType="Button" BasedOn="{StaticResource Btn}">
+      <Setter Property="Background" Value="{StaticResource AccentGrad}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!-- Nút đóng cửa sổ -->
+    <Style x:Key="BtnClose" TargetType="Button">
+      <Setter Property="Foreground" Value="#9AA6C4"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="B" Width="40" Height="32" CornerRadius="8" Background="Transparent">
+              <TextBlock Text="✕" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Foreground="{TemplateBinding Foreground}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="B" Property="Background" Value="#E81123"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Công tắc bật/tắt -->
+    <Style x:Key="Switch" TargetType="CheckBox">
+      <Setter Property="Foreground" Value="#E6EAF5"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Margin" Value="0,0,0,12"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="CheckBox">
+            <DockPanel Background="Transparent" LastChildFill="True">
+              <Border x:Name="Track" DockPanel.Dock="Right" Width="44" Height="24" CornerRadius="12"
+                      Background="#2A3350" Margin="16,0,0,0">
+                <Ellipse x:Name="Knob" Width="18" Height="18" Fill="White"
+                         HorizontalAlignment="Left" Margin="3,0,0,0"/>
+              </Border>
+              <ContentPresenter VerticalAlignment="Center"/>
+            </DockPanel>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Track" Property="Background" Value="#3B82F6"/>
+                <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right"/>
+                <Setter TargetName="Knob" Property="Margin" Value="0,0,3,0"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.4"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Ô chọn hình nền -->
+    <Style x:Key="Thumb" TargetType="RadioButton">
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Margin" Value="0,0,10,0"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="B" CornerRadius="10" BorderThickness="2" BorderBrush="#202A45"
+                    Background="#111A30" Padding="4">
+              <ContentPresenter/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="B" Property="BorderBrush" Value="#35508A"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="B" Property="BorderBrush" Value="#3B82F6"/>
+                <Setter TargetName="B" Property="Background" Value="#16244A"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="H1" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="30"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+    <Style x:Key="Kicker" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="11.5"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="#7DB4FF"/>
+      <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+    <Style x:Key="Body" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="Foreground" Value="#AAB4CF"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="LineHeight" Value="21"/>
+    </Style>
+    <Style x:Key="Card" TargetType="Border">
+      <Setter Property="Background" Value="#0F172C"/>
+      <Setter Property="BorderBrush" Value="#1F2A47"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="18,14"/>
+    </Style>
+    <Style x:Key="Bullet" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="13.5"/>
+      <Setter Property="Foreground" Value="#C9D2EA"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="Margin" Value="0,0,0,7"/>
+    </Style>
+    <Style x:Key="StepNum" TargetType="Border">
+      <Setter Property="Width" Value="26"/>
+      <Setter Property="Height" Value="26"/>
+      <Setter Property="CornerRadius" Value="13"/>
+      <Setter Property="BorderThickness" Value="1.5"/>
+      <Setter Property="BorderBrush" Value="#3B4C78"/>
+      <Setter Property="Margin" Value="0,0,12,0"/>
+    </Style>
+  </Window.Resources>
+
+  <Border CornerRadius="16" Background="#0A0F1E" BorderBrush="#24304F" BorderThickness="1" ClipToBounds="True">
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="250"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- ===== THANH BÊN ===== -->
+      <Border Grid.Column="0" CornerRadius="16,0,0,16">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#13214A" Offset="0"/>
+            <GradientStop Color="#0C1330" Offset="0.6"/>
+            <GradientStop Color="#1A0F3A" Offset="1"/>
+          </LinearGradientBrush>
+        </Border.Background>
+        <Grid Margin="26,28,22,22">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <StackPanel Grid.Row="0">
+            <Image x:Name="Logo" Width="110" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+            <TextBlock Text="Anh 7 cho Windows" FontSize="18" FontWeight="SemiBold" Foreground="White"/>
+            <TextBlock Text="Giao diện W12" FontSize="12.5" Foreground="#7DB4FF" Margin="0,2,0,0"/>
+            <TextBlock x:Name="TxtVersion" Text="Phiên bản 1.0.0" FontSize="12" Foreground="#7F8BAA" Margin="0,2,0,0"/>
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Margin="0,36,0,0">
+            <StackPanel x:Name="S1" Orientation="Horizontal" Margin="0,0,0,16">
+              <Border Style="{StaticResource StepNum}"><TextBlock Text="1" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+              <TextBlock Text="Giới thiệu" FontSize="14" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel x:Name="S2" Orientation="Horizontal" Margin="0,0,0,16">
+              <Border Style="{StaticResource StepNum}"><TextBlock Text="2" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+              <TextBlock Text="Trước khi cài" FontSize="14" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel x:Name="S3" Orientation="Horizontal" Margin="0,0,0,16">
+              <Border Style="{StaticResource StepNum}"><TextBlock Text="3" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+              <TextBlock Text="Tùy chỉnh" FontSize="14" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel x:Name="S4" Orientation="Horizontal" Margin="0,0,0,16">
+              <Border Style="{StaticResource StepNum}"><TextBlock Text="4" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+              <TextBlock Text="Cài đặt" FontSize="14" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel x:Name="S5" Orientation="Horizontal">
+              <Border Style="{StaticResource StepNum}"><TextBlock Text="5" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+              <TextBlock Text="Hoàn tất" FontSize="14" VerticalAlignment="Center"/>
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Grid.Row="2">
+            <TextBlock x:Name="TxtSideAuthor" Text="Dự án Anh 7" FontSize="12" Foreground="#9AA6C4"/>
+            <TextBlock Text="Mã nguồn mở · không thu thập dữ liệu" FontSize="11" Foreground="#66728F" Margin="0,3,0,0"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- ===== NỘI DUNG ===== -->
+      <Grid Grid.Column="1">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="44"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Thanh trên: kéo để di chuyển -->
+        <Grid x:Name="TopBar" Grid.Row="0" Background="Transparent">
+          <Button x:Name="BtnClose" Style="{StaticResource BtnClose}" HorizontalAlignment="Right" Margin="0,6,8,0" ToolTip="Đóng"/>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="40,4,40,0">
+
+          <!-- Trang 1: Giới thiệu -->
+          <StackPanel x:Name="Page1">
+            <TextBlock Text="CHÀO MỪNG" Style="{StaticResource Kicker}"/>
+            <TextBlock Text="Anh 7 cho Windows" Style="{StaticResource H1}"/>
+            <TextBlock Style="{StaticResource Body}" Text="Đây là phiên bản Windows của Anh 7, ứng dụng desktop phong cách W12 vốn chạy trên macOS. Trình cài sẽ đổi desktop của bạn sang phong cách W12: nền tối, màu nhấn xanh công nghệ, hiệu ứng trong suốt và bộ hình nền 4K độc quyền. Chỉ mất vài giây và có thể khôi phục bất cứ lúc nào."/>
+            <Border Style="{StaticResource Card}" Margin="0,22,0,0">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="110"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Tác giả" Foreground="#7F8BAA" FontSize="13" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtAuthor" FontSize="13" Foreground="White" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="1" Text="Phiên bản cho" Foreground="#7F8BAA" FontSize="13" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtProject" FontSize="13" Foreground="White" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="2" Text="Phiên bản" Foreground="#7F8BAA" FontSize="13" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TxtVer2" FontSize="13" Foreground="White" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="3" Text="Mã nguồn" Foreground="#7F8BAA" FontSize="13" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtRepo" FontSize="13" Foreground="#7DB4FF" Cursor="Hand" TextDecorations="Underline" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="4" Text="Giấy phép" Foreground="#7F8BAA" FontSize="13"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" x:Name="TxtLicense" FontSize="13" Foreground="White"/>
+              </Grid>
+            </Border>
+            <Border x:Name="RestoreCard" Style="{StaticResource Card}" Margin="0,14,0,0" Visibility="Collapsed"
+                    Background="#1B1430" BorderBrush="#4B2E83">
+              <DockPanel>
+                <Button x:Name="BtnRestore" DockPanel.Dock="Right" Style="{StaticResource Btn}" Content="Khôi phục giao diện cũ" VerticalAlignment="Center"/>
+                <TextBlock Style="{StaticResource Body}" FontSize="13" Margin="0,0,14,0" VerticalAlignment="Center"
+                           Text="Máy này đang dùng giao diện W12. Bạn có thể cài lại, hoặc khôi phục giao diện trước khi cài."/>
+              </DockPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Trang 2: Trước khi cài -->
+          <StackPanel x:Name="Page2" Visibility="Collapsed">
+            <TextBlock Text="VUI LÒNG ĐỌC" Style="{StaticResource Kicker}"/>
+            <TextBlock Text="Trước khi cài đặt" Style="{StaticResource H1}"/>
+            <Grid Margin="0,10,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Border Grid.Column="0" Style="{StaticResource Card}">
+                <StackPanel>
+                  <TextBlock Text="Sẽ thay đổi" FontSize="15" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,10"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Hình nền desktop"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Chế độ tối cho Windows và ứng dụng"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Màu nhấn xanh cho Start, thanh tác vụ, viền cửa sổ"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Hiệu ứng trong suốt"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Căn giữa thanh tác vụ (Windows 11)"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Tùy chọn: Anh 7 Dock thay thanh tác vụ Windows (tắt là hiện lại)" Margin="0"/>
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="2" Style="{StaticResource Card}">
+                <StackPanel>
+                  <TextBlock Text="Cam kết" FontSize="15" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,10"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Không sửa file hệ thống, không cần quyền quản trị"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Chỉ đổi cài đặt của tài khoản đang dùng"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Không cần Internet, không thu thập dữ liệu"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Tự lưu giao diện cũ, khôi phục bất cứ lúc nào"/>
+                  <TextBlock Style="{StaticResource Bullet}" Text="•  Mã nguồn công khai, ai cũng kiểm tra được" Margin="0"/>
+                </StackPanel>
+              </Border>
+            </Grid>
+            <TextBlock x:Name="TxtDisclaimer" Style="{StaticResource Body}" FontSize="12.5" Foreground="#7F8BAA" Margin="0,16,0,0"/>
+            <CheckBox x:Name="ChkAgree" Margin="0,16,0,0" Foreground="#E6EAF5" FontSize="14" Cursor="Hand"
+                      Content="Tôi đã đọc và đồng ý cài đặt"/>
+          </StackPanel>
+
+          <!-- Trang 3: Tùy chỉnh -->
+          <StackPanel x:Name="Page3" Visibility="Collapsed">
+            <TextBlock Text="CHỌN THEO Ý BẠN" Style="{StaticResource Kicker}"/>
+            <TextBlock Text="Tùy chỉnh" Style="{StaticResource H1}"/>
+            <TextBlock Text="Hình nền" FontSize="14" FontWeight="SemiBold" Foreground="White" Margin="0,6,0,10"/>
+            <UniformGrid Columns="5" Margin="0,0,-10,0">
+              <RadioButton x:Name="R1" GroupName="WP" Style="{StaticResource Thumb}" IsChecked="True">
+                <StackPanel><Image x:Name="Img1" Height="62" Stretch="UniformToFill"/><TextBlock Text="Bong bóng" FontSize="12.5" Margin="4,6,0,2"/></StackPanel>
+              </RadioButton>
+              <RadioButton x:Name="R2" GroupName="WP" Style="{StaticResource Thumb}">
+                <StackPanel><Image x:Name="Img2" Height="62" Stretch="UniformToFill"/><TextBlock Text="Đêm" FontSize="12.5" Margin="4,6,0,2"/></StackPanel>
+              </RadioButton>
+              <RadioButton x:Name="R3" GroupName="WP" Style="{StaticResource Thumb}">
+                <StackPanel><Image x:Name="Img3" Height="62" Stretch="UniformToFill"/><TextBlock Text="Kính" FontSize="12.5" Margin="4,6,0,2"/></StackPanel>
+              </RadioButton>
+              <RadioButton x:Name="R4" GroupName="WP" Style="{StaticResource Thumb}">
+                <StackPanel><Image x:Name="Img4" Height="62" Stretch="UniformToFill"/><TextBlock Text="Bình minh" FontSize="12.5" Margin="4,6,0,2"/></StackPanel>
+              </RadioButton>
+              <RadioButton x:Name="R5" GroupName="WP" Style="{StaticResource Thumb}">
+                <StackPanel><Image x:Name="Img5" Height="62" Stretch="UniformToFill"/><TextBlock Text="Tối giản" FontSize="12.5" Margin="4,6,0,2"/></StackPanel>
+              </RadioButton>
+            </UniformGrid>
+            <StackPanel Margin="0,16,0,0">
+              <CheckBox x:Name="TgDark" Style="{StaticResource Switch}" IsChecked="False" Content="Chế độ tối (tắt để giống ảnh Win12: Dock sáng màu)"/>
+              <CheckBox x:Name="TgAccent" Style="{StaticResource Switch}" IsChecked="True" Content="Màu nhấn trên Start, thanh tác vụ và viền cửa sổ"/>
+              <CheckBox x:Name="TgTrans" Style="{StaticResource Switch}" IsChecked="True" Content="Hiệu ứng trong suốt"/>
+              <CheckBox x:Name="TgCenter" Style="{StaticResource Switch}" IsChecked="True" Content="Căn giữa thanh tác vụ (Windows 11)"/>
+              <CheckBox x:Name="TgDock" Style="{StaticResource Switch}" IsChecked="True" Margin="0,4,0,2"
+                        Content="Anh 7 Dock: thanh tác vụ kiểu Win12 (thay thanh tác vụ Windows)"/>
+              <TextBlock Style="{StaticResource Body}" FontSize="12" Foreground="#7F8BAA" Margin="0,0,0,10"
+                         Text="Khối app, nút tròn, pin/Wi‑Fi và đồng hồ tách rời như Win12. Tắt bất cứ lúc nào: Start > Anh 7 > Tắt Anh 7 Dock."/>
+              <CheckBox x:Name="TgDockStartup" Style="{StaticResource Switch}" IsChecked="True" Content="Tự chạy Anh 7 Dock khi mở máy"/>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Trang 4: Đang cài -->
+          <StackPanel x:Name="Page4" Visibility="Collapsed">
+            <TextBlock Text="VUI LÒNG CHỜ" Style="{StaticResource Kicker}"/>
+            <TextBlock x:Name="TxtWorking" Text="Đang áp dụng giao diện W12…" Style="{StaticResource H1}"/>
+            <Border CornerRadius="4" Height="8" Background="#1A2440" Margin="0,16,0,18" ClipToBounds="True">
+              <Border x:Name="ProgFill" CornerRadius="4" HorizontalAlignment="Left" Width="0" Background="{StaticResource AccentGrad}"/>
+            </Border>
+            <TextBlock x:Name="TxtLog" Style="{StaticResource Body}" FontSize="13.5" LineHeight="24"/>
+          </StackPanel>
+
+          <!-- Trang 5: Hoàn tất -->
+          <StackPanel x:Name="Page5" Visibility="Collapsed">
+            <Border Width="64" Height="64" CornerRadius="32" HorizontalAlignment="Left" Background="{StaticResource AccentGrad}" Margin="0,4,0,18">
+              <TextBlock Text="✓" FontSize="32" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <TextBlock x:Name="TxtDoneTitle" Text="Hoàn tất!" Style="{StaticResource H1}"/>
+            <TextBlock x:Name="TxtDoneBody" Style="{StaticResource Body}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,22,0,0">
+              <Button x:Name="BtnOpenWp" Style="{StaticResource Btn}" Content="Mở thư mục hình nền" Margin="0,0,10,0"/>
+              <Button x:Name="BtnGithub" Style="{StaticResource Btn}" Content="Xem dự án trên GitHub"/>
+            </StackPanel>
+            <Border Style="{StaticResource Card}" Margin="0,22,0,0">
+              <TextBlock Style="{StaticResource Body}" FontSize="13"
+                         Text="Muốn quay về giao diện cũ: mở lại trình cài đặt này và bấm &quot;Khôi phục giao diện cũ&quot;. Nếu thanh tác vụ chưa đổi màu, hãy đăng xuất rồi đăng nhập lại."/>
+            </Border>
+          </StackPanel>
+        </Grid>
+
+        <!-- Thanh điều hướng -->
+        <Border Grid.Row="2" BorderBrush="#1A2440" BorderThickness="0,1,0,0" Padding="40,16,40,20">
+          <DockPanel x:Name="NavBar" LastChildFill="False">
+            <Button x:Name="BtnNext" DockPanel.Dock="Right" Style="{StaticResource BtnPri}" Content="Tiếp tục" MinWidth="130"/>
+            <Button x:Name="BtnBack" DockPanel.Dock="Right" Style="{StaticResource Btn}" Content="Quay lại" Margin="0,0,10,0"/>
+            <TextBlock x:Name="TxtNavHint" DockPanel.Dock="Left" FontSize="12" Foreground="#66728F" VerticalAlignment="Center"/>
+          </DockPanel>
+        </Border>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>

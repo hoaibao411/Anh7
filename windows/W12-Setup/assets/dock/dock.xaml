@@ -1,0 +1,93 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Anh 7 Dock" Height="68" Width="1200"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False" ShowActivated="False"
+        FontFamily="Segoe UI Variable Display, Segoe UI" UseLayoutRounding="True">
+
+  <Window.Resources>
+    <!-- Màu khối (đổi theo sáng/tối trong code) -->
+    <SolidColorBrush x:Key="PillBg" Color="#D9FFFFFF"/>
+    <SolidColorBrush x:Key="PillBorder" Color="#80FFFFFF"/>
+    <SolidColorBrush x:Key="Ink" Color="#1B1B2F"/>
+    <SolidColorBrush x:Key="Hover" Color="#1F000000"/>
+    <SolidColorBrush x:Key="Dot" Color="#6D6AF0"/>
+
+    <Style x:Key="Pill" TargetType="Border">
+      <Setter Property="Background" Value="{DynamicResource PillBg}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource PillBorder}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="14"/>
+      <Setter Property="Height" Value="54"/>
+      <Setter Property="Margin" Value="5,0"/>
+      <Setter Property="Effect">
+        <Setter.Value>
+          <DropShadowEffect BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.22" Color="#2A1E5C"/>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Nút trong khối -->
+    <Style x:Key="DockBtn" TargetType="Button">
+      <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Focusable" Value="False"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="B" CornerRadius="10" Background="Transparent" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="B" Property="Background" Value="{DynamicResource Hover}"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="B" Property="Opacity" Value="0.7"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+
+  <Grid VerticalAlignment="Bottom" Margin="0,0,0,6">
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+
+      <!-- Khối 1: Start, Tìm kiếm, Task view + app ghim / đang chạy -->
+      <Border Style="{StaticResource Pill}" Padding="5,0">
+        <StackPanel x:Name="AppsPanel" Orientation="Horizontal" VerticalAlignment="Center"/>
+      </Border>
+
+      <!-- Khối 2: nút tròn Anh 7 -->
+      <Border Style="{StaticResource Pill}" Width="54" Padding="0">
+        <Button x:Name="BtnOrb" Style="{StaticResource DockBtn}" Width="44" Height="44" ToolTip="Anh 7">
+          <Image x:Name="ImgOrb" Width="30" Height="30"/>
+        </Button>
+      </Border>
+
+      <!-- Khối 3: pin, mạng, Bluetooth, âm lượng -->
+      <Border Style="{StaticResource Pill}" Padding="4,0">
+        <Button x:Name="BtnStatus" Style="{StaticResource DockBtn}" Padding="10,8" ToolTip="Cài đặt nhanh (Win+A)">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock x:Name="IcBattery" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="17" Margin="0,0,12,0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="IcNet" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="17" Margin="0,0,12,0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="IcBt" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="17" Margin="0,0,12,0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="IcVol" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="17" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+      </Border>
+
+      <!-- Khối 4: đồng hồ -->
+      <Border Style="{StaticResource Pill}" Padding="4,0">
+        <Button x:Name="BtnClock" Style="{StaticResource DockBtn}" Padding="14,4" ToolTip="Lịch và thông báo (Win+N)">
+          <StackPanel>
+            <TextBlock x:Name="TxtTime" FontSize="15" HorizontalAlignment="Center" Foreground="{DynamicResource Ink}"/>
+            <TextBlock x:Name="TxtDate" FontSize="15" HorizontalAlignment="Center" Foreground="{DynamicResource Ink}"/>
+          </StackPanel>
+        </Button>
+      </Border>
+    </StackPanel>
+  </Grid>
+</Window>

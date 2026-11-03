@@ -1,0 +1,34 @@
+﻿ANH 7 CHO WINDOWS — Giao diện W12 — phiên bản 1.3.2
+Phiên bản Windows của Anh 7 (bản gốc chạy trên macOS) · tác giả: hoaibao411 · https://github.com/hoaibao411/Anh7
+Mã nguồn mở (EPL-2.0). Không liên kết với Microsoft.
+
+CÁCH CÀI
+1. Giải nén TOÀN BỘ file zip (chuột phải > Extract All). Không chạy trực tiếp trong file zip.
+2. Bấm đúp "CaiDat-W12.cmd".
+3. Nếu Windows hiện "Windows protected your PC": bấm "More info" > "Run anyway".
+4. Làm theo các bước trên màn hình.
+
+TRÌNH CÀI SẼ ĐỔI
+- Hình nền desktop (5 mẫu 4K: Bong bóng, Đêm, Kính, Bình minh, Tối giản)
+- Chế độ tối, màu nhấn xanh, hiệu ứng trong suốt
+- Căn giữa thanh tác vụ (Windows 11)
+- Anh 7 Dock (mặc định bật): thanh tác vụ kiểu Win12 thay thanh tác vụ Windows:
+  khối app (Start, Tìm, app ghim/đang chạy), nút tròn, pin/Wi-Fi/Bluetooth, đồng hồ.
+  Chuột phải app trên Dock để ghim/bỏ ghim/đóng. Bấm nút tròn để sửa danh sách ghim hoặc thoát.
+
+AN TOÀN
+- Chỉ đổi cài đặt của tài khoản đang dùng. Không cần quyền quản trị, không sửa file hệ thống.
+- Không cần Internet, không thu thập dữ liệu.
+- Giao diện cũ được lưu tại %LOCALAPPDATA%\Anh7-W12\backup.json.
+
+GỠ / KHÔI PHỤC
+Mở lại "CaiDat-W12.cmd" > bấm "Khôi phục giao diện cũ" (tắt Dock, trả thanh tác vụ và giao diện như cũ).
+
+NẾU THANH TÁC VỤ WINDOWS BIẾN MẤT
+Nhấn phím Windows > gõ "Tắt Anh 7 Dock" > Enter. Hoặc đăng xuất rồi đăng nhập lại.
+
+YÊU CẦU
+Windows 10 hoặc Windows 11.
+
+NẾU CÓ LỖI
+Xem file %TEMP%\anh7-w12-loi.txt (trình cài) hoặc %TEMP%\anh7-dock-loi.txt (Dock) và gửi cho tác giả qua GitHub (mục Issues).
