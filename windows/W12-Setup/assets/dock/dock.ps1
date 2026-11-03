@@ -55,7 +55,7 @@ try {
     # ---------- Cấu hình app ghim ----------
     function Default-Pinned {
         $list = @(
-            [pscustomobject]@{ name = 'File Explorer'; path = (Join-Path $env:WINDIR 'explorer.exe'); glyph = 'E8B7' }
+            [pscustomobject]@{ name = 'File Explorer'; path = (Join-Path $env:WINDIR 'explorer.exe'); icon = 'folder' }
         )
         $edge = Join-Path ${env:ProgramFiles(x86)} 'Microsoft\Edge\Application\msedge.exe'
         if (-not (Test-Path $edge)) { $edge = Join-Path $env:ProgramFiles 'Microsoft\Edge\Application\msedge.exe' }
@@ -65,15 +65,15 @@ try {
                          (Join-Path $env:LOCALAPPDATA 'Google\Chrome\Application\chrome.exe'))) {
             if (Test-Path $c) { $list += [pscustomobject]@{ name = 'Google Chrome'; path = $c }; break }
         }
-        $list += [pscustomobject]@{ name = 'Cài đặt'; path = 'ms-settings:'; glyph = 'E713' }
-        $list += [pscustomobject]@{ name = 'Microsoft Store'; path = 'ms-windows-store:'; glyph = 'E719' }
+        $list += [pscustomobject]@{ name = 'Cài đặt'; path = 'ms-settings:'; icon = 'settings' }
+        $list += [pscustomobject]@{ name = 'Microsoft Store'; path = 'ms-windows-store:'; icon = 'store' }
         return $list
     }
     function Load-Conf {
         if (Test-Path -LiteralPath $ConfFile) {
             try { return (Get-Content -LiteralPath $ConfFile -Raw -Encoding UTF8 | ConvertFrom-Json) } catch { }
         }
-        $c = [pscustomobject]@{ pinned = @(Default-Pinned) }
+        $c = [pscustomobject]@{ theme = 'light'; pinned = @(Default-Pinned) }
         Save-Conf $c
         return $c
     }
@@ -86,28 +86,36 @@ try {
     foreach ($n in @('AppsPanel', 'BtnOrb', 'ImgOrb', 'BtnStatus', 'IcBattery', 'IcNet', 'IcBt', 'IcVol', 'BtnClock', 'TxtTime', 'TxtDate')) {
         $ui[$n] = $win.FindName($n)
     }
-    $Glyph = 'Segoe Fluent Icons, Segoe MDL2 Assets'
+    # Lưu ý: PowerShell không phân biệt hoa/thường, nên tên biến font phải khác hẳn tham số $glyph
+    $IconFont = New-Object Windows.Media.FontFamily('Segoe Fluent Icons, Segoe MDL2 Assets')
     function G([string]$hex) { return [string][char][Convert]::ToInt32($hex, 16) }
 
-    # Sáng / tối theo cài đặt Windows
-    $light = $true
-    try { $light = [bool](Get-ItemPropertyValue 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' 'SystemUsesLightTheme') } catch { }
-    # Tạo Brush bằng BrushConverter (tạo SolidColorBrush trực tiếp trong PowerShell bị nhận nhầm thành Color)
+    # Màu Dock: theme = 'light' (mặc định, giống Win12) | 'dark' | 'auto' (theo Windows)
     $brushConv = New-Object Windows.Media.BrushConverter
     function Brush([string]$c) {
         [Windows.Media.Brush]$b = $brushConv.ConvertFromString($c)
         $b.Freeze()
         return ,$b
     }
-    if (-not $light) {
-        try {
-            $win.Resources['PillBg'] = (Brush '#D91C2033')
-            $win.Resources['PillBorder'] = (Brush '#33FFFFFF')
-            $win.Resources['Ink'] = (Brush '#F0F2FA')
-            $win.Resources['Hover'] = (Brush '#26FFFFFF')
-            $win.Resources['Dot'] = (Brush '#8FB4FF')
-        } catch { }   # đổi màu tối không được thì giữ màu sáng, Dock vẫn chạy
+    $Themes = @{
+        light = @{ PillBg = '#E6FFFFFF'; PillBorder = '#99FFFFFF'; Ink = '#1B1B2F'; Hover = '#1A2A1E5C'; Dot = '#6D6AF0' }
+        dark  = @{ PillBg = '#D91C2033'; PillBorder = '#33FFFFFF'; Ink = '#F0F2FA'; Hover = '#26FFFFFF'; Dot = '#8FB4FF' }
     }
+    function Apply-Theme {
+        $t = [string]$script:conf.theme
+        if (-not $t) { $t = 'light' }
+        if ($t -eq 'auto') {
+            $t = 'light'
+            try {
+                if (-not [bool](Get-ItemPropertyValue 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' 'SystemUsesLightTheme')) { $t = 'dark' }
+            } catch { }
+        }
+        if (-not $Themes.ContainsKey($t)) { $t = 'light' }
+        foreach ($k in $Themes[$t].Keys) {
+            try { $win.Resources[$k] = (Brush $Themes[$t][$k]) } catch { }
+        }
+    }
+    Apply-Theme
 
     function Load-Png([string]$path) {
         $bi = New-Object Windows.Media.Imaging.BitmapImage
@@ -116,6 +124,20 @@ try {
     }
     $ui.ImgOrb.Source = Load-Png (Join-Path $Here 'orb.png')
     $startImg = Load-Png (Join-Path $Here 'start.png')
+    $Icons = @{}
+    foreach ($n in @('search', 'tasks', 'folder', 'settings', 'store', 'app')) {
+        $f = Join-Path $Here ('ic-' + $n + '.png')
+        if (Test-Path -LiteralPath $f) { $Icons[$n] = Load-Png $f }
+    }
+    # Cấu hình cũ dùng mã glyph -> đổi sang icon màu
+    $GlyphToIcon = @{ 'E8B7' = 'folder'; 'E713' = 'settings'; 'E719' = 'store'; 'E71D' = 'app'; 'E721' = 'search'; 'E7C4' = 'tasks' }
+    function Pin-Icon($p) {
+        if ($p.icon -and $Icons.ContainsKey([string]$p.icon)) { return $Icons[[string]$p.icon] }
+        if ($p.glyph -and $GlyphToIcon.ContainsKey(([string]$p.glyph).ToUpperInvariant())) { return $Icons[$GlyphToIcon[([string]$p.glyph).ToUpperInvariant()]] }
+        $img = Exe-Icon ([string]$p.path)
+        if ($img) { return $img }
+        return $Icons['app']
+    }
 
     # Icon của file .exe (lưu đệm theo đường dẫn)
     $iconCache = @{}
@@ -142,11 +164,12 @@ try {
         $g = New-Object Windows.Controls.Grid
         if ($image) {
             $img = New-Object Windows.Controls.Image
-            $img.Source = $image; $img.Width = 26; $img.Height = 26
+            $img.Source = $image; $img.Width = 28; $img.Height = 28
+            [Windows.Media.RenderOptions]::SetBitmapScalingMode($img, 'HighQuality')
             [void]$g.Children.Add($img)
         } else {
             $t = New-Object Windows.Controls.TextBlock
-            $t.Text = G $glyph; $t.FontFamily = $Glyph; $t.FontSize = 20
+            $t.Text = G $glyph; $t.FontFamily = $IconFont; $t.FontSize = 20
             $t.HorizontalAlignment = 'Center'; $t.VerticalAlignment = 'Center'
             $t.SetResourceReference([Windows.Controls.TextBlock]::ForegroundProperty, 'Ink')
             [void]$g.Children.Add($t)
@@ -183,9 +206,9 @@ try {
         # Start, Tìm kiếm, Task view
         $b = New-DockButton 'Start' $startImg $null 0 $false
         $b.Add_Click({ [Anh7Dock.Native]::Keys([byte[]]@(0x5B)) }); [void]$panel.Children.Add($b)
-        $b = New-DockButton 'Tìm kiếm (Win+S)' $null 'E721' 0 $false
+        $b = New-DockButton 'Tìm kiếm (Win+S)' $Icons['search'] $null 0 $false
         $b.Add_Click({ [Anh7Dock.Native]::Keys([byte[]]@(0x5B, 0x53)) }); [void]$panel.Children.Add($b)
-        $b = New-DockButton 'Các cửa sổ (Win+Tab)' $null 'E7C4' 0 $false
+        $b = New-DockButton 'Các cửa sổ (Win+Tab)' $Icons['tasks'] $null 0 $false
         $b.Add_Click({ [Anh7Dock.Native]::Keys([byte[]]@(0x5B, 0x09)) }); [void]$panel.Children.Add($b)
 
         # Gom cửa sổ theo file chạy
@@ -203,8 +226,8 @@ try {
             $ws = if ($groups.Contains($k)) { $groups[$k] } else { $null }
             if ($ws) { $used[$k] = $true }
             $isActive = $ws -and (@($ws | Where-Object { $_.Handle -eq $fg }).Count -gt 0)
-            $img = if ($p.glyph) { $null } else { Exe-Icon ([string]$p.path) }
-            $btn = New-DockButton ([string]$p.name) $img $(if ($p.glyph) { [string]$p.glyph } else { 'E71D' }) $(if ($ws) { $ws.Count } else { 0 }) $isActive
+            $img = Pin-Icon $p
+            $btn = New-DockButton ([string]$p.name) $img $null $(if ($ws) { $ws.Count } else { 0 }) $isActive
             $btn.Tag = @{ Pin = $p; Wins = $ws }
             $btn.Add_Click({ param($s, $e)
                 $t = $s.Tag
@@ -222,7 +245,8 @@ try {
             $isActive = @($ws | Where-Object { $_.Handle -eq $fg }).Count -gt 0
             $isFrameHost = $k.EndsWith('applicationframehost.exe')
             $img = if ($first.Path -and -not $isFrameHost) { Exe-Icon $first.Path } else { $null }
-            $btn = New-DockButton $first.Title $img 'E71D' $ws.Count $isActive
+            if (-not $img) { $img = $Icons['app'] }
+            $btn = New-DockButton $first.Title $img $null $ws.Count $isActive
             $btn.Tag = @{ Pin = $null; Wins = $ws }
             $btn.Add_Click({ param($s, $e) [Anh7Dock.Native]::ToggleWindow($s.Tag.Wins[0].Handle) })
             Add-AppMenu $btn $null $ws
@@ -300,7 +324,12 @@ try {
     foreach ($item in @(
         @('Hiện desktop (Win+D)', { [Anh7Dock.Native]::Keys([byte[]]@(0x5B, 0x44)) }),
         @('Sửa danh sách app ghim', { Start-Process notepad.exe -ArgumentList ('"' + $ConfFile + '"') }),
-        @('Tải lại Dock', { $script:conf = Load-Conf; Build-Apps $true }),
+        @('Đổi màu Dock (sáng / tối / theo Windows)', {
+            $next = @{ light = 'dark'; dark = 'auto'; auto = 'light' }
+            $cur = [string]$script:conf.theme; if (-not $cur) { $cur = 'light' }
+            $script:conf | Add-Member -NotePropertyName theme -NotePropertyValue $next[$cur] -Force
+            Save-Conf $script:conf; Apply-Theme; Build-Apps $true }),
+        @('Tải lại Dock', { $script:conf = Load-Conf; Apply-Theme; Build-Apps $true }),
         @('Thoát Anh 7 Dock (hiện lại thanh tác vụ Windows)', { $win.Close() })
     )) {
         $mi = New-Object Windows.Controls.MenuItem

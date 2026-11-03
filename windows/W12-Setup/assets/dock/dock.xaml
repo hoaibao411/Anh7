@@ -7,7 +7,7 @@
 
   <Window.Resources>
     <!-- Màu khối (đổi theo sáng/tối trong code) -->
-    <SolidColorBrush x:Key="PillBg" Color="#D9FFFFFF"/>
+    <SolidColorBrush x:Key="PillBg" Color="#E6FFFFFF"/>
     <SolidColorBrush x:Key="PillBorder" Color="#80FFFFFF"/>
     <SolidColorBrush x:Key="Ink" Color="#1B1B2F"/>
     <SolidColorBrush x:Key="Hover" Color="#1F000000"/>
@@ -35,12 +35,32 @@
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
-            <Border x:Name="B" CornerRadius="10" Background="Transparent" Padding="{TemplateBinding Padding}">
+            <Border x:Name="B" CornerRadius="10" Background="Transparent" Padding="{TemplateBinding Padding}"
+                    RenderTransformOrigin="0.5,0.5">
+              <Border.RenderTransform>
+                <ScaleTransform x:Name="Sc" ScaleX="1" ScaleY="1"/>
+              </Border.RenderTransform>
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
                 <Setter TargetName="B" Property="Background" Value="{DynamicResource Hover}"/>
+                <Trigger.EnterActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <DoubleAnimation Storyboard.TargetName="Sc" Storyboard.TargetProperty="ScaleX" To="1.1" Duration="0:0:0.12"/>
+                      <DoubleAnimation Storyboard.TargetName="Sc" Storyboard.TargetProperty="ScaleY" To="1.1" Duration="0:0:0.12"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <DoubleAnimation Storyboard.TargetName="Sc" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.12"/>
+                      <DoubleAnimation Storyboard.TargetName="Sc" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.12"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.ExitActions>
               </Trigger>
               <Trigger Property="IsPressed" Value="True">
                 <Setter TargetName="B" Property="Opacity" Value="0.7"/>
