@@ -175,7 +175,7 @@ function Files-Open([string]$start) {
     $m = New-Object Windows.Controls.ContextMenu
     foreach ($def in @(
         @('Mở', { param($s, $e) $st2 = $s.Tag; foreach ($it in @($st2.Ui.FileList.SelectedItems)) { Files-OpenItem $st2 $it } }),
-        @('Hiện trong File Explorer', { param($s, $e) $it = $s.Tag.Ui.FileList.SelectedItem; if ($it) { Start-Process explorer.exe ('/select,"' + $it.Path + '"') } }),
+        @('Hiện trong File Explorer', { param($s, $e) $it = $s.Tag.Ui.FileList.SelectedItem; if ($it) { $global:Anh7AllowExplorer = (Get-Date).AddSeconds(8); Start-Process explorer.exe ('/select,"' + $it.Path + '"') } }),
         @('Đổi tên (F2)', { param($s, $e) Files-Rename $s.Tag }),
         @('Sao chép đường dẫn', { param($s, $e) $it = $s.Tag.Ui.FileList.SelectedItem; if ($it) { [Windows.Clipboard]::SetText($it.Path) } }),
         @('Đưa vào Thùng rác (Delete)', { param($s, $e) Files-Trash $s.Tag })
@@ -244,7 +244,7 @@ function Files-Open([string]$start) {
     })
     [void]$script:FilesWins.Add($w)
 
-    if (-not $start -or -not (Test-Path -LiteralPath $start)) { $start = $env:USERPROFILE }
+    if ($start -ne '::trash' -and (-not $start -or -not (Test-Path -LiteralPath $start))) { $start = $env:USERPROFILE }
     Files-SetMode $st 'grid'
     Files-Go $st $start $true
     return $w

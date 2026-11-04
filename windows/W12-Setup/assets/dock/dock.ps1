@@ -280,9 +280,10 @@ try {
         else { $w.WindowState = 'Normal'; [Anh7Dock.Native]::BringToFront((Files-Hwnd $w)) }
         Build-Apps $true
     }
-    function Open-FilesWindow {
+    function Open-FilesWindow([string]$where) {
+        if (-not $where) { $where = [Environment]::GetFolderPath('Desktop') }
         try {
-            $w = Files-Open ([Environment]::GetFolderPath('Desktop'))
+            $w = Files-Open $where
             $w.Add_Activated({ Build-Apps $true })
             $w.Add_Deactivated({ Build-Apps $true })
             $w.Add_Closed({ Build-Apps $true })
@@ -437,6 +438,33 @@ try {
         if ($script:tick % 20 -eq 0) { try { Update-Status } catch { } }
     })
 
+    # ---------- Chuyển cửa sổ File Explorer sang Tệp Anh 7 ----------
+    # Mở Thùng rác trên desktop, hay app khác mở thư mục bằng Explorer -> đóng Explorer, mở Tệp Anh 7 đúng chỗ đó.
+    # Bỏ qua: Control Panel, Home/This PC, và lúc người dùng cố ý chọn "Hiện trong File Explorer".
+    $global:Anh7AllowExplorer = [datetime]::MinValue
+    $script:shellApp = $null
+    function Redirect-Explorer {
+        if ([string]$script:conf.filesApp -eq 'explorer') { return }
+        if ((Get-Date) -lt $global:Anh7AllowExplorer) { return }
+        if (-not $script:shellApp) { $script:shellApp = New-Object -ComObject Shell.Application }
+        foreach ($ew in @($script:shellApp.Windows())) {
+            $target = $null
+            try {
+                if (-not ([string]$ew.FullName).ToLowerInvariant().EndsWith('explorer.exe')) { continue }
+                $p = [string]$ew.Document.Folder.Self.Path
+            } catch { continue }
+            if ($p -match '645FF040-5081-101B-9F08-00AA002F954E') { $target = '::trash' }
+            elseif ($p -match '^[a-zA-Z]:\\' -and (Test-Path -LiteralPath $p -PathType Container)) { $target = $p }
+            if ($target) {
+                try { $ew.Quit() } catch { }
+                Open-FilesWindow $target
+            }
+        }
+    }
+    $redirT = New-Object Windows.Threading.DispatcherTimer
+    $redirT.Interval = [TimeSpan]::FromMilliseconds(600)
+    $redirT.Add_Tick({ try { Redirect-Explorer } catch { $script:shellApp = $null } })
+
     # Hẹn giờ nhanh: giữ thanh tác vụ cũ luôn ẩn + nhận phím Windows
     $script:lastTaps = 0
     $hideT = New-Object Windows.Threading.DispatcherTimer
@@ -456,6 +484,7 @@ try {
     try { [Anh7Dock.WinKey]::Start() } catch { }
     $fast.Start()
     $hideT.Start()
+    $redirT.Start()
     # Nạp sẵn danh sách app cho Start (sau khi Dock đã hiện)
     $win.Dispatcher.BeginInvoke([Action]{ try { Start-LoadApps $true } catch { } }, [Windows.Threading.DispatcherPriority]::ApplicationIdle) | Out-Null
     [void]$win.ShowDialog()

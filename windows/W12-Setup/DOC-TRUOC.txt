@@ -1,4 +1,4 @@
-﻿ANH 7 CHO WINDOWS — Giao diện W12 — phiên bản 1.6.0
+﻿ANH 7 CHO WINDOWS — Giao diện W12 — phiên bản 1.6.1
 Phiên bản Windows của Anh 7 (bản gốc chạy trên macOS) · tác giả: hoaibao411 · https://github.com/hoaibao411/Anh7
 Mã nguồn mở (EPL-2.0). Không liên kết với Microsoft.
 

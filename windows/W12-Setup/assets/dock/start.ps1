@@ -39,6 +39,7 @@ function Start-LoadApps([bool]$force) {
     foreach ($a in $script:StartApps) { $old[$a.Path] = $a }
     $list = New-Object System.Collections.Generic.List[Anh7Dock.FileItem]
     $list.Add((Start-NewItem 'Tệp Anh 7' 'anh7:files'))
+    $list.Add((Start-NewItem 'Thùng rác' 'anh7:trash'))
     $seen = @{}
     try {
         foreach ($a in (Get-StartApps | Sort-Object Name)) {
@@ -51,6 +52,8 @@ function Start-LoadApps([bool]$force) {
         }
     } catch { }
     $list[0].Icon = $script:FilesFolderIcon
+    $list[1].Icon = $script:FilesFolderIcon
+    try { $ti = Files-Thumb 'shell:RecycleBinFolder' 64 4; if ($ti) { $list[1].Icon = $ti } } catch { }
     $script:StartApps = @($list)
     $script:StartLoaded = Get-Date
 }
@@ -65,6 +68,7 @@ function Start-PinnedIds {
             $a = $script:StartApps | Where-Object { $_.Name -eq $n } | Select-Object -First 1
             if ($a -and $ids -notcontains $a.Path) { $ids += $a.Path }
         }
+        $ids += 'anh7:trash'
         $script:conf | Add-Member -NotePropertyName startPinned -NotePropertyValue $ids -Force
         Save-Conf $script:conf
     }
@@ -77,6 +81,7 @@ function Start-Launch($it) {
     $id = [string]$it.Path
     try {
         if ($id -eq 'anh7:files') { Open-FilesWindow }
+        elseif ($id -eq 'anh7:trash') { Open-FilesWindow '::trash' }
         elseif ($id -match '^[a-zA-Z]:\\' -and (Test-Path -LiteralPath $id)) { Start-Process -FilePath $id }
         else { Start-Process explorer.exe ('shell:AppsFolder\' + $id) }
     } catch {
